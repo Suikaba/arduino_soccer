@@ -1,0 +1,321 @@
+/*サッカープログラム*/
+/*ver.びるびるの全国大会プログラムをarduinoように改造しただけ*/
+#include<Wire.h>
+
+// constant value
+#define BACK_PING 10  // 超音波センサ
+#define LEFT_PING 11
+#define RIGHT_PING 12
+
+// variables
+char motor_pow[4] = {0,0,0,0};
+
+int sw = 0;
+int swport = 53;     //スイッチのポート番号
+int IR[7] = {0};
+int usfront = 0;     //超音波センサー前
+int usback = 0;      //超音波センサー後
+int compass = 0;
+int compassport = 13;     //コンパスセンサのポート番号
+int irc = 500;   //赤外線センサーの閾値
+int a = 300;     //超音波防御用閾値
+int b = 80;      //超音波　スタック判定値
+int c = 100;     //コンパス左にかたむいてるかの場合分け
+int d = 200;     //コンパス右に傾いてるかの最大値
+int g = 150;     //100ループ、スタック待ち
+int h = 0;       //左右傾き判定　0、正面　1、左　2、右
+int i = 0;       //スタック判定
+int k = 0;       //スタックを左右に交互に繰り返す(スタッグをするたびに0と1が入れ替わる）
+int l = 0;       //スタック判定
+int m = 0;       //スタック用カウンタ
+int o = 0;       //左右用(使ってる?）
+
+//ここから
+void setup(){
+  Wire.begin();//join i2c bus
+}
+
+void loop(){
+//値を読み込んで変数に入れる
+  for (int ir = 0; ir < 7; ir++){
+    IR[ir] = analogRead(ir);
+  }
+  usfront = UsonicMeasurRead(50);
+  usback = UsonicMeasurRead(52);
+  compass = analogRead(compassport);
+  sw = digitalRead(swport);
+//スイッチがonなら動作、offなら何もしない
+  if (sw == 1){          //HIGH＝１だったっけ？
+//スタッグ状態にあるか判定
+    if (usfront <= b){
+      m = m + 1;
+    }else {
+      m = 0;
+    }
+//スタッグ状態が150ループ続けばスタッグ動作に入るための変数iを１にする。
+    if ( m > g ){
+      i = 1;
+      m = 0;
+    }
+//ロボットがどちらに傾いているか判定する　判定用変数h１右２左０前
+    if (compass > d ){
+      h = 1;
+    }else if (compass > c ){
+      h = 2;
+    }else {
+      h = 0;
+    }
+//ボールが前にあるとき
+//スタッグ用変数iが１のときはスタッグ（スタッグするたびに動き方反転）
+    if (IR[0] < irc ){
+      if( i == 1){
+        k++;
+        if (k == 1){
+          SetMotorValue (40,-40,40,-40);
+          delay(200);
+        }else{
+          k = 0;
+          SetMotorValue (40,40,-40,40);
+          delay(200);
+        }
+      }
+//そうでないなら自分の角度を前に向けながら前進（以降同じ）
+      if (h == 2){
+        SetMotorValue (70,80,70,80);
+      }else if (h == 1){
+        SetMotorValue (80,70,80,70);
+      }else{
+        SetMotorValue (80,75,80,72);
+      }
+//右前に見えたとき
+    }else if( IR[1] < irc ){
+      if (IR[4] < IR[2]){
+        if (usback > a ){
+          if (h == 2){
+            SetMotorValue (-50,50,0,0);
+          }else if (h == 1 ){
+            SetMotorValue (0,0,50,-50);
+          }else{
+            SetMotorValue (-100,100,100,-100);
+          }
+        }else{
+          if(h == 2){
+            SetMotorValue (-50,50,0,0);
+          }else if (h == 1){
+            SetMotorValue (0,0,50,-50);
+          }else{
+            SetMotorValue (-70,0,0,-80);
+          }
+        }
+      }else{
+        if ( usback > a ){
+          if (h == 2){
+            SetMotorValue (0,0,-60,60);
+          }else if (h == 1){
+            SetMotorValue (0,0,60,-60);
+          }else{
+            SetMotorValue (100,-100,-90,90);
+          }
+        }else{
+          if(h == 2){
+            SetMotorValue (0,0,-60,60);
+          }else if(h == 1){
+            SetMotorValue (0,0,60,-60);
+          }else{
+            SetMotorValue (80,-80,-72,72);
+          }
+        }
+      }
+//左前に見えたとき
+    }else if (IR[2] < irc ){
+      if (IR[5] < IR[3]){
+        if (usback > a ){
+          if(h == 2){
+            SetMotorValue (-50,50,0,0);
+          }else if (h == 1){
+            SetMotorValue (0,0,50,-50);
+          }else{
+            SetMotorValue (-100,100,100,-100);
+          }
+        }else{
+          if(h == 2){
+            SetMotorValue(-50,50,0,0);
+          }else if (h == 1){
+            SetMotorValue (0,0,50,-50);
+          }else{
+            SetMotorValue (-80,0,0,-80);
+          }
+        }
+      }else{
+        if (usback > a ){
+          if (h == 2){
+            SetMotorValue (0,0,-60,60);
+          }else if (h == 1){
+            SetMotorValue (0,0,60,-60);
+          }else {
+            SetMotorValue(100,-100,-90,90);
+          }
+        }else {
+          if (h == 2){
+            SetMotorValue (0,0,-60,60);
+          }else if (h == 1){
+            SetMotorValue (0,0,60,-60);
+          }else {
+            SetMotorValue (80,-80,-72,72);
+          }
+        }
+      }
+//右に見えたとき
+    }else if (IR[3] < irc ){
+      if ( usback < a ){
+        if ( h == 2 ){
+          SetMotorValue (0,0,-50,50);
+        }else if (h == 1 ){
+          SetMotorValue (50,-50,0,0);
+        }else{
+          SetMotorValue (100,-100,-90,90);
+        }
+      }else{
+        if ( h == 2 ){
+          SetMotorValue(0,0,-50,50);
+        }else if ( h == 1 ){
+          SetMotorValue(50,-50,0,0);
+        }else{
+          SetMotorValue(0,-80,-80,0);
+        }
+      }
+//左に見えたとき
+    }else if ( IR[4] < irc ){
+      if ( usback < a ){
+        if ( h == 2 ){
+          SetMotorValue(-50,50,0,0);
+        }else if ( h == 1 ){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(-100,100,100,-100);
+        }
+      }else{
+        if ( h == 2 ){
+          SetMotorValue(-50,50,0,0);
+        }else if( h == 1){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(-80,0,0,-80);
+        }
+      }
+//右後ろに見えたとき
+    }else if ( IR[5] < irc ){
+      if (usback < a ){
+        if ( h == 2 ){
+          SetMotorValue(0,0,-50,50);
+        }else if( h == 1){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(-80,0,0,-80);
+        }
+      }else{
+        if ( h== 2 ){
+          SetMotorValue(0,0,-50,50);
+        }else if ( h == 1){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(-80,0,0,-80);
+        }
+      }
+//左後ろに見えたとき
+    }else if (IR[6] < irc ){
+      if ( usback < a ){
+        if ( h == 2 ){
+          SetMotorValue(0,0,-50,50);
+        }else if ( h == 1 ){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(0,-80,-80,0);
+        }
+      }else{
+        if ( h == 2 ){
+          SetMotorValue(0,0,-50,50);
+        }else if ( h == 1 ){
+          SetMotorValue(0,0,50,-50);
+        }else{
+          SetMotorValue(0,-80,-80,0);
+        }
+      }
+//何も見えていないとき
+    }else{
+      if ( usback < a ){
+        if ( h == 2 ){
+          SetMotorValue(-30,0,-30,0);
+        }else if ( h == 1 ){
+          SetMotorValue(0,-30,0,-30);
+        }else{
+          SetMotorValue(0,0,0,0);
+        }
+      }else{
+        if ( h == 2){
+          SetMotorValue(-30,0,-30,0);
+        }else if ( h == 1 ){
+          SetMotorValue(0,-30,0,-30);
+        }else{
+          SetMotorValue(-100,-100,-100,-100);
+        }
+      }
+    }
+  }
+//if文終了。モーターを動かす。
+  Move();
+}
+
+//超音波センサーを読み取るプログラム
+// pin=センサーに接続しているピン番号
+// 距離をｃｍで返す(検出できない場合は０を返す)
+int UsonicMeasureRead(int pin){
+     long t ;
+     int ans ;     
+// 超音波センサーに5usのパルスを出力する
+     pinMode(pin, OUTPUT) ;    // ピンを出力モードにする
+     digitalWrite(pin, LOW) ;
+     delayMicroseconds(2) ;
+     digitalWrite(pin, HIGH) ;
+     delayMicroseconds(2) ;
+     digitalWrite(pin, LOW) ;
+     pinMode(pin, INPUT) ;              // ピンを入力モードにする
+     t = pulseIn(pin, HIGH) ;           // パルス幅の時間を測る
+     if (t < 18000) {                   // ３ｍ以上の距離は計算しない
+          ans = (t / 29) / 2 ;          // 往復なので２で割る
+     } else ans = 0 ;
+     return ans ;
+}
+
+//モーター制御用プログラム
+//ダイセン6chモーターコントロールボード
+//入力valは-100~100 0でストップ 999でブレーキ
+void SetMotorValue(char val1, char val2, char val3, char val4)
+{
+  char vals[4] = { val1, val2, val3, val4 };
+  for( int i=0; i<4; ++i )
+  {
+    if(vals[i] < 0 && vals[i] >= -100){
+      vals[i] = abs(vals[i]);
+      motor_pow[i] = vals[i] + 128;
+    } else if(vals[i] >= 0 && vals[i] <= 100) {
+      motor_pow[i] = vals[i];
+    } else if(vals[i] == 999) {
+      motor_pow[i] = 128;
+    } else {
+      return;
+    }
+  }  
+}
+
+void Move(){
+  Wire.beginTransmission(0x14>>1);
+  Wire.write(motor_pow[0]); // 1ch
+  Wire.write(motor_pow[1]); // 2ch
+  Wire.write(motor_pow[2]); // 3ch
+  Wire.write(motor_pow[3]); // 4ch
+  Wire.write(0); // 5ch unused
+  Wire.write(0); // 6ch unused
+  Wire.write(0);
+  Wire.endTransmission();
+}
