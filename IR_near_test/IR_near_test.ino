@@ -1,4 +1,4 @@
-/*近距離用IRセンサのテスト*/
+
 #define NEAR_IR_NUM  8
 
 int near_ir_pin[NEAR_IR_NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
