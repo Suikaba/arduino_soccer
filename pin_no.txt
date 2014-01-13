@@ -1,47 +1,37 @@
-/*取扱説明書*/
 
-★analogポート
+-- analog port
+[important]
+Change the output of the pin you didn't use as analog input to LOW.
 
-重要
-analog入力として使わなかったピンはdigital出力で出力をLOWにしてください
-
-近距離用IRセンサー
-前、０
-左前、１
-右前、２
-左、３
-右、４
-左後ろ、５
-右後ろ、６
-後ろ、７
-
-※アナログの（0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15）のポートを
-それぞれ（54,55,56,59,60,61,64,65,66,67,68,69）のデジタルピンとしても定義可能。
+--near IR sensor
+front       0
+left front  1
+right front 2
+left        3
+right       4
+left back   5
+right back  6
+back        7
 
 
-★digitalポート
-LED電球(49,51,53)
-トグルスイッチ(48,50)
-タクトスイッチ＝リセットボタン
+-- digital port
+LED(49,51,53)
+toggle switch(48,50)
+tack switch(= reset button)
 
 
-★I2C
-コンパスセンサー
-モーターボード（モーター制御用マイコン）
+--ping sensor
+front  9
+back  10
+left  11
+right 12
 
-※I2Cはどれにつなげても同じ。(ピン定義不要)
 
-★超音波センサ
-前...p9
-後ろ...p10
-左...p11
-右...p12
-
-■LCD
-p23...lcd4(RS)
-p25...lcd6(Enable)
-p27...lcd12(DB5)
-p29...lcd14(DB7)
-p31...lcd13(DB6)
-p33...lcd11(DB4)
-p35...lcd5(R/W)
+-- LCD
+lcd4(RS)     23
+lcd5(R/W)    35
+lcd6(Enable) 25
+lcd11(DB4)   33
+lcd12(DB5)   27
+lcd13(DB6)   31
+lcd14(DB7)   29
