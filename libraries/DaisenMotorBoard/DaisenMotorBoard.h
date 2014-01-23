@@ -11,8 +11,8 @@ public:
     daisen_motor_board();
 
 public:
-    void set_motor_value(char p1, char p2, char p3, char p4);
-    void set_motor_value(char pows[4]);
+    void set_motor_value(int p1, int p2, int p3, int p4);
+    void set_motor_value(int pows[4]);
     void move();
 
 private:

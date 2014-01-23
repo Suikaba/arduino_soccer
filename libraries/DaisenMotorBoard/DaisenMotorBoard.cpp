@@ -19,12 +19,12 @@ daisen_motor_board::daisen_motor_board() {
     }
 }
 
-void daisen_motor_board::set_motor_value(char p1, char p2, char p3, char p4) {
-    char pows[4] = {p1, p2, p3, p4};
+void daisen_motor_board::set_motor_value(int p1, int p2, int p3, int p4) {
+    int pows[4] = {p1, p2, p3, p4};
     set_motor_value(pows);
 }
 
-void daisen_motor_board::set_motor_value(char pows[4]) {
+void daisen_motor_board::set_motor_value(int pows[4]) {
     for(int i=0; i<MOTOR_NUM; ++i) {
         if(pows[i] < 0 && pows[i] >= -100) {
             if(motor_status_[i] == MOTOR_STATUS_BACK) {
