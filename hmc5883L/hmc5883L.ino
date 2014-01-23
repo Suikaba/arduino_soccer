@@ -18,7 +18,7 @@ void setup()
     Serial.println(compass.get_error_text(error));
   
   Serial.println(compass.calibrate(32));
-  
+  compass.calibrate(32);
   Serial.println("Setting measurement mode to continous.");
   error = compass.set_measurement_mode(MEASUREMENT_CONTINUOUS); // Set the measurement mode to Continuous
   if(error != 0) // If there is an error, print it out.
@@ -34,9 +34,10 @@ void loop()
   
   float heading_degrees = compass.read_heading();
   float heading = heading_degrees * PI/180;
+  Serial.println((int)heading_degrees*10);
 
   // Output the data via the serial port.
-  output(raw, scaled, heading, heading_degrees);
+  //output(raw, scaled, heading, heading_degrees);
 
   // Normally we would delay the application by 66ms to allow the loop
   // to run at 15Hz (default bandwidth for the HMC5883L).
