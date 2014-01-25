@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <DaisenMotorBoard.h>
 
-daisen_motor_board motor_board;
+DaisenMotorBoard motor_board;
 int counter = 0;
 
 void setup() {
