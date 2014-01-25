@@ -5,10 +5,10 @@
 #include <Wire.h>
 
 
-class daisen_motor_board
+class DaisenMotorBoard
 {
 public:
-    daisen_motor_board();
+    DaisenMotorBoard();
 
 public:
     void set_motor_value(int p1, int p2, int p3, int p4);
