@@ -7,7 +7,7 @@ Change the output of the pin you didn't use as analog input to LOW.
 front       0
 left front  1
 right front 2
-left        3
+left        8
 right       4
 left back   5
 right back  6
