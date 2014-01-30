@@ -20,7 +20,7 @@ s
 
 -- digital port
 LED(49,51,53)
-toggle switch(48,50)
+toggle switch(left:48, right:50)
 tack switch(= reset button)
 
 
