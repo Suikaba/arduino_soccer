@@ -3,6 +3,7 @@
 
 HMC5883L compass;
 int error = 0;
+int from_reference = 0;
 
 void setup()
 {
@@ -23,6 +24,15 @@ void setup()
   error = compass.set_measurement_mode(MEASUREMENT_CONTINUOUS); // Set the measurement mode to Continuous
   if(error != 0) // If there is an error, print it out.
     Serial.println(compass.get_error_text(error));
+  
+  delay(50);
+  compass.read_heading();
+  int compass_sum = 0;
+    for(int i=0; i<2; ++i) {
+        compass_sum += (int)compass.read_heading()*10;
+        delay(10);
+    }
+    from_reference = compass_sum/2;
 }
 
 void loop()
@@ -34,8 +44,16 @@ void loop()
   
   float heading_degrees = compass.read_heading();
   float heading = heading_degrees * PI/180;
-  Serial.println((int)heading_degrees*10);
+  //Serial.println((int)heading_degrees*10);
 
+    const int tmp = from_reference - (int)heading_degrees*10;;
+    if(tmp < -1800) {
+        Serial.println(tmp + 3600);
+    } else if(tmp > 1800) {
+        Serial.println(tmp - 3600);
+    } else {
+        Serial.println(tmp);
+    }
   // Output the data via the serial port.
   //output(raw, scaled, heading, heading_degrees);
 
