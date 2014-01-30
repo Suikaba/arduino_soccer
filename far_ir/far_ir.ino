@@ -30,7 +30,9 @@ void request_event() {
     int max_ir = find_max_ir();
     byte send_value = 0;
     send_value = max_ir*10;
-    if(pin_value[max_ir] > 540) {
+    if(pin_value[max_ir] > 570) {
+        send_value += 7;
+    } else if(pin_value[max_ir] > 540) {
         send_value += 6;
     } else if(pin_value[max_ir] > 500) {
         send_value += 5;
@@ -43,8 +45,7 @@ void request_event() {
     } else if(pin_value[max_ir] > 300) {
         send_value += 1;
     }
-    //Serial.print(send_value[0]); Serial.print(" ");
-    //Serial.println(send_value[1]);
+    //Serial.println(send_value);
     Wire.write(send_value);
 }
 
