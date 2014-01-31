@@ -33,6 +33,19 @@ const int RIGHT_BACK_DIRECTION  = 7;
 
 const int COMPASS_RANGE = 150;
 
+const int LINE_LEFT_FRONT  = 0;
+const int LINE_RIGHT_FRONT = 1;
+const int LINE_BACK        = 2;
+
+const int LINE_FRONT_F       = 1;
+const int LINE_BACK_F        = 2;
+const int LINE_LEFT_F        = 3;
+const int LINE_RIGHT_F       = 4;
+const int LINE_LEFT_FRONT_F  = 5;
+const int LINE_RIGHT_FRONT_F = 6;
+const int LINE_LEFT_BACK_F   = 7;
+const int LINE_RIGHT_BACK_F  = 8;
+
 
 void calc_compass_reference();
 int read_compass();
@@ -60,6 +73,8 @@ int largest_far_ir = -1;
 int far_ir_status = -1;
 bool switches[2] = {false};
 bool is_on_line[3] = {false};
+int light_flag = 0;
+int before_light_flag = 0;
 
 
 void setup(){
@@ -113,14 +128,14 @@ void loop(){
         go_left_back[0]=74; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=70;
         go_right_back[0]=0; go_right_back[1]=75; go_right_back[2]=75; go_right_back[3]=0;
     } else {
-        go_front[0]=-50; go_front[1]=-51; go_front[2]=-50; go_front[3]=-51;
-        go_back[0]=50; go_back[1]=51; go_back[2]=50; go_back[3]=51;
-        go_left[0]=50; go_left[1]=-49; go_left[2]=-50; go_left[3]=50;
-        go_right[0]=-51; go_right[1]=50; go_right[2]=50; go_right[3]=-50;
-        go_left_front[0]=0; go_left_front[1]=-50; go_left_front[2]=-50; go_left_front[3]=0;
-        go_right_front[0]=-51; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-56;
-        go_left_back[0]=50; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=55;
-        go_right_back[0]=0; go_right_back[1]=50; go_right_back[2]=51; go_right_back[3]=0;
+        go_front[0]=-46; go_front[1]=-47; go_front[2]=-46; go_front[3]=-47;
+        go_back[0]=46; go_back[1]=47; go_back[2]=46; go_back[3]=47;
+        go_left[0]=46; go_left[1]=-45; go_left[2]=-46; go_left[3]=46;
+        go_right[0]=-47; go_right[1]=46; go_right[2]=46; go_right[3]=-46;
+        go_left_front[0]=0; go_left_front[1]=-46; go_left_front[2]=-46; go_left_front[3]=0;
+        go_right_front[0]=-46; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-52;
+        go_left_back[0]=46; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=51;
+        go_right_back[0]=0; go_right_back[1]=46; go_right_back[2]=47; go_right_back[3]=0;
     }
 
     read_switches();
@@ -129,10 +144,150 @@ void loop(){
     read_light_sensor();
             
     if(!switches[0] || !switches[1]) {
-        // don't anything
         motor_board.set_motor_value(motor_stop);
-    } else if(false/*is_on_line[0] || is_on_line[1] || is_on_line[2]*/) {
-        // light process
+    } else if(light_flag != 0 || is_on_line[LINE_LEFT_FRONT] || is_on_line[LINE_RIGHT_FRONT] || is_on_line[LINE_BACK]) {
+        read_ping();
+        const int compass_offset = from_reference/45;
+        if(!is_on_line[LINE_LEFT_FRONT] && !is_on_line[LINE_RIGHT_FRONT] && is_on_line[LINE_BACK]) {
+            switch(light_flag) {
+            case LINE_FRONT_F:
+                if(ping_value[0] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_BACK_F:
+                if(ping_value[1] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_LEFT_F:
+                if(ping_value[2] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_RIGHT_F:
+                if(ping_value[3] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_LEFT_FRONT_F:
+                if(ping_value[2] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_RIGHT_FRONT_F:
+                if(ping_value[3] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_LEFT_BACK_F:
+                if(ping_value[2] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            case LINE_RIGHT_BACK_F:
+                if(ping_value[3] > 45) {
+                    before_light_flag = 0;
+                    light_flag = 0;
+                }
+                break;
+            }
+        } else if(light_flag != 0) {
+            switch(light_flag) {
+            case LINE_FRONT_F:
+                motor_board.set_motor_value(go_back);
+                break;
+            case LINE_LEFT_F:
+                if(before_light_flag == 0) {
+                    if(is_on_line[LINE_RIGHT_FRONT]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_FRONT_F;
+                        motor_board.set_motor_value(go_back);
+                    } else if(is_on_line[LINE_BACK]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_LEFT_BACK_F;
+                        motor_board.set_motor_value(go_right_front);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_right);
+                }
+                break;
+            case LINE_RIGHT_F:
+                if(before_light_flag == 0) {
+                    if(is_on_line[LINE_LEFT_FRONT]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_FRONT_F;
+                        motor_board.set_motor_value(go_back);
+                    } else if(is_on_line[LINE_BACK]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_RIGHT_BACK_F;
+                        motor_board.set_motor_value(go_left_front);
+                    } else {
+                        motor_board.set_motor_value(go_left);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_left);
+                }
+                break;
+            case LINE_LEFT_FRONT_F:
+                motor_board.set_motor_value(go_right_back);
+                break;
+            case LINE_RIGHT_BACK_F:
+                motor_board.set_motor_value(go_left_front);
+                break;
+            case LINE_BACK_F:
+                if(before_light_flag == 0) {
+                    if(is_on_line[LINE_LEFT_FRONT]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_LEFT_BACK_F;
+                        motor_board.set_motor_value(go_right_front);
+                    } else if(is_on_line[LINE_RIGHT_FRONT]) {
+                        before_light_flag = light_flag;
+                        light_flag = LINE_RIGHT_BACK_F;
+                        motor_board.set_motor_value(go_left_front);
+                    } else {
+                        motor_board.set_motor_value(go_front);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_front);
+                }
+                break;
+            }
+        } else if(is_on_line[LINE_LEFT_FRONT]) {
+            if(is_on_line[LINE_RIGHT_FRONT]) {
+                light_flag = LINE_FRONT_F;
+                motor_board.set_motor_value(go_back);
+            } else if(is_on_line[LINE_BACK]) {
+                light_flag = LINE_LEFT_BACK_F;
+                motor_board.set_motor_value(go_right);
+            } else {
+                if(abs(from_reference) > 450) {
+                    light_flag = LINE_LEFT_FRONT_F;
+                    motor_board.set_motor_value(go_right_back);
+                } else {
+                    light_flag = LINE_LEFT_F;
+                    motor_board.set_motor_value(go_right);
+                }
+            }
+        } else if(is_on_line[LINE_RIGHT_FRONT]) {
+            if(is_on_line[LINE_BACK]) {
+                light_flag = LINE_RIGHT_BACK_F;
+                motor_board.set_motor_value(go_left_front);
+            } else {
+                light_flag = LINE_RIGHT_FRONT_F;
+                motor_board.set_motor_value(go_left);
+            }
+        } else if(is_on_line[LINE_BACK]) {
+            light_flag = LINE_BACK_F;
+            motor_board.set_motor_value(go_front);
+        }
     } else if(abs(from_reference) >= 900) {
         adjust_direction(from_reference);
         lcd.clear();
@@ -187,7 +342,6 @@ void loop(){
             lcd.print("front n");
             break;
         case BACK_DIRECTION:
-            // ignore offset
             motor_board.set_motor_value(
                 go_back[0]-compass_offset,
                 go_back[1]+compass_offset,
@@ -251,7 +405,6 @@ void loop(){
             lcd.print("right_back n");
             break;
         default:
-          // !?
           motor_board.set_motor_value(0, 0, 0, 0);
           lcd.clear();
         }
@@ -389,7 +542,6 @@ void read_ping() {
     int i=0;
     while(Wire.available() && i < PING_PIN_NUM) {
         ping_value[i] = Wire.read();
-        //Serial.println(ping_value[i]);
         ++i;
     }
     Wire.endTransmission();
@@ -399,7 +551,6 @@ void read_near_ir() {
     first_nearest_ir = -1;
     for(int i=0; i<NEAR_IR_NUM; ++i) {
         near_ir_value[i] = analogRead(NEAR_IR_PIN[i]) * 100 / 1023;
-        //Serial.print(near_ir_value[i]); Serial.print(" ");
         if(i != 3 && (first_nearest_ir == -1 || near_ir_value[i] < near_ir_value[first_nearest_ir])) {
           first_nearest_ir = i;
         }
@@ -414,17 +565,13 @@ void read_far_ir() {
     int i=0;
     if(Wire.available()) {
         int data = Wire.read();
-        //Serial.println(data);
         largest_far_ir = data/10;
         far_ir_status = data%10;
         ++i;
-        //Serial.print(largest_far_ir[i]); Serial.print(" ");
     }
-    //Serial.println();
 }
 
-void read_light_sensor()
-{
+void read_light_sensor() {
     for(int i=0; i<3; ++i) {
         is_on_line[i] = false;
         for(int j=0; j<2; ++j) {
@@ -436,8 +583,7 @@ void read_light_sensor()
     }
 }
 
-int get_direction_from_near_ir()
-{
+int get_direction_from_near_ir() {
     if(first_nearest_ir == 0) {
         if((near_ir_value[1] >= 30 && near_ir_value[2] >= 30) || abs(near_ir_value[1]-near_ir_value[2]) < 10) {
             return FRONT_DIRECTION;
@@ -488,8 +634,7 @@ int get_direction_from_near_ir()
     }
 }
 
-int get_direction_from_far_ir()
-{
+int get_direction_from_far_ir() {
     if(largest_far_ir == 0) {
         return FRONT_DIRECTION;
     } else if(largest_far_ir == 1) {
