@@ -13,7 +13,8 @@ void read_light() {
         is_on_line[i] = false;
         for(int j=0; j<2; ++j) {
             const int tmp = analogRead(LIGHT_PIN[i][j]);
-            if(tmp - light_reference[i][j] > 150) {
+            Serial.println(tmp);
+            if(light_reference[i][j] - tmp > 75) {
                 is_on_line[i] = true;
             }
         }
@@ -42,4 +43,5 @@ void loop() {
         Serial.print(" ");
     }
     Serial.println();
+    delay(500);
 }
