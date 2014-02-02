@@ -56,6 +56,7 @@ void read_ping();
 void read_near_ir();
 void read_far_ir();
 void read_light_sensor();
+void set_new_light_distance();
 int get_direction_from_near_ir();
 int get_direction_from_far_ir();
 void output_motor_power(int, int, int, int);
@@ -73,8 +74,11 @@ int largest_far_ir = -1;
 int far_ir_status = -1;
 bool switches[2] = {false};
 bool is_on_line[3] = {false};
+bool is_on_line2[3][2] = {false};
 int light_flag = 0;
 int before_light_flag = 0;
+int before_before_light_flag = 0;
+int light_distance[4] = {0};
 
 
 void setup(){
@@ -99,7 +103,7 @@ void setup(){
     delay(50);
     read_compass(); // ignore first value
     calc_compass_reference();
-    
+
     for(int i=0; i<3; ++i) {
         for(int j=0; j<2; ++j) {
             light_reference[i][j] = analogRead(LIGHT_PIN[i][j]);
@@ -108,7 +112,6 @@ void setup(){
 }
 
 void loop(){
-    //unsigned int start = millis();
     int motor_stop[] = {0, 0, 0, 0};
     int go_front[] = {0, 0, 0, 0};
     int go_back[] = {0, 0, 0, 0};
@@ -128,139 +131,127 @@ void loop(){
         go_left_back[0]=74; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=70;
         go_right_back[0]=0; go_right_back[1]=75; go_right_back[2]=75; go_right_back[3]=0;
     } else {
-        go_front[0]=-40; go_front[1]=-41; go_front[2]=-40; go_front[3]=-41;
-        go_back[0]=40; go_back[1]=41; go_back[2]=40; go_back[3]=41;
-        go_left[0]=40; go_left[1]=-39; go_left[2]=-40; go_left[3]=40;
-        go_right[0]=-41; go_right[1]=40; go_right[2]=40; go_right[3]=-40;
-        go_left_front[0]=0; go_left_front[1]=-40; go_left_front[2]=-40; go_left_front[3]=0;
-        go_right_front[0]=-40; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-46;
-        go_left_back[0]=40; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=45;
-        go_right_back[0]=0; go_right_back[1]=40; go_right_back[2]=41; go_right_back[3]=0;
+        go_front[0]=-54; go_front[1]=-55; go_front[2]=-55; go_front[3]=-55;
+        go_back[0]=55; go_back[1]=56; go_back[2]=56; go_back[3]=55;
+        go_left[0]=55; go_left[1]=-54; go_left[2]=-55; go_left[3]=55;
+        go_right[0]=-56; go_right[1]=55; go_right[2]=55; go_right[3]=-55;
+        go_left_front[0]=0; go_left_front[1]=-55; go_left_front[2]=-55; go_left_front[3]=0;
+        go_right_front[0]=-55; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-60;
+        go_left_back[0]=55; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=59;
+        go_right_back[0]=0; go_right_back[1]=55; go_right_back[2]=56; go_right_back[3]=0;
     }
 
+    lcd.clear();
+    read_ping();
     read_switches();
     const int from_reference = compass_from_reference();
     read_far_ir();
     read_light_sensor();
-            
+
+    const int compass_offset = from_reference/37;
+    go_front[0]-=compass_offset; go_front[1]+=compass_offset; go_front[2]-=compass_offset; go_front[3]+=compass_offset;
+    go_back[0]-=compass_offset; go_back[1]+=compass_offset; go_back[2]-=compass_offset; go_back[3]+=compass_offset;
+    go_left[0]-=compass_offset; go_left[1]+=compass_offset; go_left[2]-=compass_offset; go_left[3]+=compass_offset;
+    go_right[0]-=compass_offset; go_right[1]+=compass_offset; go_right[2]-=compass_offset; go_right[3]+=compass_offset;
+    go_left_front[1]+=compass_offset; go_left_front[2]-=compass_offset;
+    go_right_front[0]-=compass_offset; go_right_front[3]+=compass_offset;
+    go_left_back[0]+=compass_offset; go_left_back[3]-=compass_offset;
+    go_right_back[1]+=compass_offset; go_right_back[2]+=compass_offset;
+
+
     if(!switches[0] || !switches[1]) {
         motor_board.set_motor_value(motor_stop);
         light_flag = 0;
         before_light_flag = 0;
     } else if(light_flag != 0 || is_on_line[LINE_LEFT_FRONT] || is_on_line[LINE_RIGHT_FRONT] || is_on_line[LINE_BACK]) {
-        lcd.clear();
         lcd.print("light");
-        read_ping();
-        const int compass_offset = from_reference/45;
-        const int ping_range = 38;
-        if(!is_on_line[LINE_LEFT_FRONT] && !is_on_line[LINE_RIGHT_FRONT] && !is_on_line[LINE_BACK]) {
+        const int ping_range = 40+abs(from_reference/6);
+        if(before_before_light_flag != 0 || (!is_on_line[LINE_LEFT_FRONT] && !is_on_line[LINE_RIGHT_FRONT] && !is_on_line[LINE_BACK])) {
+            bool escaped = false;
             switch(light_flag) {
             case LINE_FRONT_F:
                 if(ping_value[0] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_back[0]-compass_offset,
-                        go_back[1]+compass_offset,
-                        go_back[2]-compass_offset,
-                        go_back[3]+compass_offset);
+                    motor_board.set_motor_value(go_back);
                 }
                 break;
             case LINE_BACK_F:
                 if(ping_value[1] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_front[0]-compass_offset,
-                        go_front[1]+compass_offset,
-                        go_front[2]-compass_offset,
-                        go_front[3]+compass_offset);
+                    motor_board.set_motor_value(go_front);
                 }
                 break;
             case LINE_LEFT_F:
                 if(ping_value[2] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_right[0]-compass_offset,
-                        go_right[1]+compass_offset,
-                        go_right[2]-compass_offset,
-                        go_right[3]+compass_offset);
+                    motor_board.set_motor_value(go_right);
                 }
                 break;
             case LINE_RIGHT_F:
                 if(ping_value[3] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_left[0]-compass_offset,
-                        go_left[1]+compass_offset,
-                        go_left[2]-compass_offset,
-                        go_left[3]+compass_offset);
+                    motor_board.set_motor_value(go_left);
                 }
                 break;
             case LINE_LEFT_FRONT_F:
                 if(ping_value[2] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        0,
-                        go_right_back[1]+compass_offset,
-                        go_right_back[2]-compass_offset,
-                        0);
+                    motor_board.set_motor_value(go_right_back);
                 }
                 break;
             case LINE_RIGHT_FRONT_F:
                 if(ping_value[3] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_left_back[0]+compass_offset,
-                        0,
-                        0,
-                        go_left_back[3]-compass_offset);
+                    motor_board.set_motor_value(go_left_back);
                 }
                 break;
             case LINE_LEFT_BACK_F:
-                if(ping_value[2] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                if(ping_value[2] > ping_range && ping_value[1] > ping_range) {
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        go_right_front[0]-compass_offset,
-                        0,
-                        0,
-                        go_right_front[3]+compass_offset);
+                    motor_board.set_motor_value(go_right_front);
                 }
                 break;
             case LINE_RIGHT_BACK_F:
-                if(ping_value[3] > ping_range) {
-                    before_light_flag = 0;
-                    light_flag = 0;
+                if(ping_value[3] > ping_range && ping_value[1] > ping_range) {
+                    escaped = true;
                 } else {
-                    motor_board.set_motor_value(
-                        0,
-                        go_left_front[1]+compass_offset,
-                        go_left_front[2]-compass_offset,
-                        0);
+                    motor_board.set_motor_value(go_left_front);
                 }
                 break;
+            }
+            if(escaped) {
+                before_before_light_flag = 0;
+                before_light_flag = 0;
+                light_flag = 0;
             }
         } else if(light_flag != 0) {
             lcd.clear();
             switch(light_flag) {
             case LINE_FRONT_F:
-                motor_board.set_motor_value(
-                    go_back[0]-compass_offset,
-                    go_back[1]+compass_offset,
-                    go_back[2]-compass_offset,
-                    go_back[3]+compass_offset);
+                if(is_on_line[LINE_BACK]) {
+                    if(ping_value[0] < light_distance[0]) {
+                        motor_board.set_motor_value(go_back);
+                    } else if(from_reference < 0) {
+                        before_before_light_flag = before_light_flag;
+                        before_light_flag = light_flag;
+                        light_flag = LINE_LEFT_FRONT_F;
+                        motor_board.set_motor_value(go_right_back);
+                    } else {
+                        before_before_light_flag = before_light_flag;
+                        before_light_flag = light_flag;
+                        light_flag = LINE_RIGHT_FRONT_F;
+                        motor_board.set_motor_value(go_left_back);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_back);
+                }
                 lcd.print("LINE_FRONT_F");
                 break;
             case LINE_BACK_F:
@@ -268,32 +259,16 @@ void loop(){
                     if(is_on_line[LINE_LEFT_FRONT]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_LEFT_BACK_F;
-                        motor_board.set_motor_value(
-                            go_right_front[0]-compass_offset,
-                            0,
-                            0,
-                            go_right_front[3]+compass_offset);
+                        motor_board.set_motor_value(go_right_front);
                     } else if(is_on_line[LINE_RIGHT_FRONT]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_RIGHT_BACK_F;
-                        motor_board.set_motor_value(
-                            0,
-                            go_left_front[1]+compass_offset,
-                            go_left_front[2]-compass_offset,
-                            0);
+                        motor_board.set_motor_value(go_left_front);
                     } else {
-                      motor_board.set_motor_value(
-                          go_front[0]-compass_offset,
-                          go_front[1]+compass_offset,
-                          go_front[2]-compass_offset,
-                          go_front[3]+compass_offset);
+                      motor_board.set_motor_value(go_front);
                     }
                 } else {
-                    motor_board.set_motor_value(
-                        go_front[0]-compass_offset,
-                        go_front[1]+compass_offset,
-                        go_front[2]-compass_offset,
-                        go_front[3]+compass_offset);
+                    motor_board.set_motor_value(go_front);
                 }
                 lcd.print("LINE_BACK_F");
                 break;
@@ -302,26 +277,16 @@ void loop(){
                     if(is_on_line[LINE_RIGHT_FRONT]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_FRONT_F;
-                        motor_board.set_motor_value(
-                            go_back[0]-compass_offset,
-                            go_back[1]+compass_offset,
-                            go_back[2]-compass_offset,
-                            go_back[3]+compass_offset);
+                        motor_board.set_motor_value(go_back);
                     } else if(is_on_line[LINE_BACK]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_LEFT_BACK_F;
-                        motor_board.set_motor_value(
-                            go_right_front[0]-compass_offset,
-                            0,
-                            0,
-                            go_right_front[3]+compass_offset);
+                        motor_board.set_motor_value(go_right_front);
+                    } else {
+                        motor_board.set_motor_value(go_right);
                     }
                 } else {
-                    motor_board.set_motor_value(
-                        go_right[0]-compass_offset,
-                        go_right[1]+compass_offset,
-                        go_right[2]-compass_offset,
-                        go_right[3]+compass_offset);
+                    motor_board.set_motor_value(go_right);
                 }
                 lcd.print("LINE_LEFT_F");
                 break;
@@ -330,132 +295,91 @@ void loop(){
                     if(is_on_line[LINE_LEFT_FRONT]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_FRONT_F;
-                        motor_board.set_motor_value(
-                            go_back[0]-compass_offset,
-                            go_back[1]+compass_offset,
-                            go_back[2]-compass_offset,
-                            go_back[3]+compass_offset);
+                        motor_board.set_motor_value(go_back);
                     } else if(is_on_line[LINE_BACK]) {
                         before_light_flag = light_flag;
                         light_flag = LINE_RIGHT_BACK_F;
-                        motor_board.set_motor_value(
-                            0,
-                            go_left_front[1]+compass_offset,
-                            go_left_front[2]-compass_offset,
-                            0);
+                        motor_board.set_motor_value(go_left_front);
                     } else {
-                        motor_board.set_motor_value(
-                            go_left[0]-compass_offset,
-                            go_left[1]+compass_offset,
-                            go_left[2]-compass_offset,
-                            go_left[3]+compass_offset);
+                        motor_board.set_motor_value(go_left);
                     }
                 } else {
-                    motor_board.set_motor_value(
-                        go_left[0]-compass_offset,
-                        go_left[1]+compass_offset,
-                        go_left[2]-compass_offset,
-                        go_left[3]+compass_offset);
+                    motor_board.set_motor_value(go_left);
                 }
                 lcd.print("LINE_RIGHT_F");
                 break;
             case LINE_LEFT_FRONT_F:
-                motor_board.set_motor_value(
-                    0,
-                    go_right_back[1]+compass_offset,
-                    go_right_back[2]-compass_offset,
-                    0);
+                motor_board.set_motor_value(go_right_back);
                 lcd.print("LINE_LEFT_FRONT_F");
                 break;
             case LINE_RIGHT_FRONT_F:
-                motor_board.set_motor_value(
-                    go_left_back[0]+compass_offset,
-                    0,
-                    0,
-                    go_left_back[3]-compass_offset);
+                motor_board.set_motor_value(go_left_back);
                 lcd.print("LINE_RIGHT_FRONT_F");
                 break;
             case LINE_LEFT_BACK_F:
-                motor_board.set_motor_value(
-                    go_right_front[0]-compass_offset,
-                    0,
-                    0,
-                    go_right_front[3]+compass_offset);
+                if(is_on_line[LINE_RIGHT_FRONT]) {
+                    if(ping_value[2] < light_distance[2]) {
+                        motor_board.set_motor_value(go_right_front);
+                    } else {
+                        before_before_light_flag = before_light_flag;
+                        before_light_flag = light_flag;
+                        light_flag = LINE_LEFT_FRONT_F;
+                        motor_board.set_motor_value(go_right_back);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_right_front);
+                }
                 lcd.print("LINE_LEFT_BACK_F");
                 break;
             case LINE_RIGHT_BACK_F:
-                motor_board.set_motor_value(
-                    0,
-                    go_left_front[1]+compass_offset,
-                    go_left_front[2]-compass_offset,
-                    0);
+                if(is_on_line[LINE_LEFT_FRONT]) {
+                    if(ping_value[4] < light_distance[4]) {
+                        motor_board.set_motor_value(go_left_front);
+                    } else {
+                        before_before_light_flag = before_light_flag;
+                        before_light_flag = light_flag;
+                        light_flag = LINE_RIGHT_FRONT_F;
+                        motor_board.set_motor_value(go_left_back);
+                    }
+                } else {
+                    motor_board.set_motor_value(go_left_front);
+                }
                 lcd.print("LINE_RIGHT_BACK_F");
                 break;
             }
         } else if(is_on_line[LINE_LEFT_FRONT]) {
             if(is_on_line[LINE_RIGHT_FRONT]) {
                 light_flag = LINE_FRONT_F;
-                motor_board.set_motor_value(
-                    go_back[0]-compass_offset,
-                    go_back[1]+compass_offset,
-                    go_back[2]-compass_offset,
-                    go_back[3]+compass_offset);
+                motor_board.set_motor_value(go_back);
             } else if(is_on_line[LINE_BACK]) {
                 light_flag = LINE_LEFT_BACK_F;
-                motor_board.set_motor_value(
-                    go_right[0]-compass_offset,
-                    go_right[1]+compass_offset,
-                    go_right[2]-compass_offset,
-                    go_right[3]+compass_offset);
+                motor_board.set_motor_value(go_right_front);
             } else {
-                if(abs(from_reference) > 450) {
-                    light_flag = LINE_LEFT_FRONT_F;
-                    motor_board.set_motor_value(
-                        0,
-                        go_right_back[1]+compass_offset,
-                        go_right_back[2]-compass_offset,
-                        0);
-                } else {
-                    light_flag = LINE_LEFT_F;
-                    motor_board.set_motor_value(
-                        go_right[0]-compass_offset,
-                        go_right[1]+compass_offset,
-                        go_right[2]-compass_offset,
-                        go_right[3]+compass_offset);
-                }
+                light_flag = LINE_LEFT_F;
+                motor_board.set_motor_value(go_right);
             }
+            set_new_light_distance();
         } else if(is_on_line[LINE_RIGHT_FRONT]) {
             if(is_on_line[LINE_BACK]) {
                 light_flag = LINE_RIGHT_BACK_F;
-                motor_board.set_motor_value(
-                    0,
-                    go_left_front[1]+compass_offset,
-                    go_left_front[2]-compass_offset,
-                    0);
+                motor_board.set_motor_value(go_left_front);
             } else {
                 light_flag = LINE_RIGHT_F;
-                motor_board.set_motor_value(
-                    go_left[0]-compass_offset,
-                    go_left[1]+compass_offset,
-                    go_left[2]-compass_offset,
-                    go_left[3]+compass_offset);
+                motor_board.set_motor_value(go_left);
             }
+            light_flag = from_reference;
+            set_new_light_distance();
         } else if(is_on_line[LINE_BACK]) {
             light_flag = LINE_BACK_F;
-            motor_board.set_motor_value(
-                  go_front[0]-compass_offset,
-                  go_front[1]+compass_offset,
-                  go_front[2]-compass_offset,
-                  go_front[3]+compass_offset);
+            motor_board.set_motor_value(go_front);
+            set_new_light_distance();
         }
     } else if(abs(from_reference) >= 900) {
         adjust_direction(from_reference);
         lcd.clear();
-    } else if(far_ir_status == 0) {
-        read_ping();
+    } else if(far_ir_status <= 2) {
         if(abs(from_reference) >= COMPASS_RANGE) {
             adjust_direction(from_reference);
-            lcd.clear();
         } else {
             // left - right
             const int side_sub = ping_value[2] - ping_value[3];
@@ -489,169 +413,84 @@ void loop(){
         delay(5);
         read_ping();
         read_near_ir();
-        const int compass_offset = from_reference/37;
         const int dir = get_direction_from_near_ir();
         switch(dir) {
         case FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                  go_front[0]-compass_offset,
-                  go_front[1]+compass_offset,
-                  go_front[2]-compass_offset,
-                  go_front[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_front);
             lcd.print("front n");
             break;
         case BACK_DIRECTION:
-            motor_board.set_motor_value(
-                go_back[0]-compass_offset,
-                go_back[1]+compass_offset,
-                go_back[2]-compass_offset,
-                go_back[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_back);
             lcd.print("back n");
             break;
         case LEFT_DIRECTION:
-            motor_board.set_motor_value(
-                go_left[0]-compass_offset,
-                go_left[1]+compass_offset,
-                go_left[2]-compass_offset,
-                go_left[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_left);
             lcd.print("left n");
             break;
         case RIGHT_DIRECTION:
-            motor_board.set_motor_value(
-                go_right[0]-compass_offset,
-                go_right[1]+compass_offset,
-                go_right[2]-compass_offset,
-                go_right[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_right);
             lcd.print("right n");
             break;
         case LEFT_FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                0,
-                go_left_front[1]+compass_offset,
-                go_left_front[2]-compass_offset,
-                0);
-            lcd.clear();
+            motor_board.set_motor_value(go_left_front);
             lcd.print("left_front n");
             break;
         case RIGHT_FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                go_right_front[0]-compass_offset,
-                0,
-                0,
-                go_right_front[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_right_front);
             lcd.print("right_front n");
             break;
         case LEFT_BACK_DIRECTION:
-            motor_board.set_motor_value(
-                go_left_back[0]+compass_offset,
-                0,
-                0,
-                go_left_back[3]-compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_left_back);
             lcd.print("left_back n");
             break;
         case RIGHT_BACK_DIRECTION:
-            motor_board.set_motor_value(
-                0,
-                go_right_back[1]+compass_offset,
-                go_right_back[2]-compass_offset,
-                0);
-            lcd.clear();
+            motor_board.set_motor_value(go_right_back);
             lcd.print("right_back n");
             break;
         default:
           motor_board.set_motor_value(0, 0, 0, 0);
-          lcd.clear();
         }
     } else {
-        const int compass_offset = from_reference/37;
         const int dir = get_direction_from_far_ir();
         switch(dir) {
         case FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                go_front[0]-compass_offset,
-                go_front[1]+compass_offset,
-                go_front[2]-compass_offset,
-                go_front[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_front);
             lcd.print("front far");
             break;
         case BACK_DIRECTION:
-            motor_board.set_motor_value(
-                go_back[0]-compass_offset,
-                go_back[1]+compass_offset,
-                go_back[2]-compass_offset,
-                go_back[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_back);
             lcd.print("back far");
             break;
         case LEFT_DIRECTION:
-            motor_board.set_motor_value(
-                go_left[0]-compass_offset,
-                go_left[1]+compass_offset,
-                go_left[2]-compass_offset,
-                go_left[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_left);
             Serial.println("left far");
             break;
         case RIGHT_DIRECTION:
-            motor_board.set_motor_value(
-                go_right[0]-compass_offset,
-                go_right[1]+compass_offset,
-                go_right[2]-compass_offset,
-                go_right[3]+compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_right);
             lcd.print("right far");
             break;
         case LEFT_FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                0,
-                go_left_front[1]+compass_offset,
-                go_left_front[2]-compass_offset,
-                0);
-            lcd.clear();
+            motor_board.set_motor_value(go_left_front);
             lcd.print("left_front far");
             break;
         case RIGHT_FRONT_DIRECTION:
-            motor_board.set_motor_value(
-                go_right_front[0]+compass_offset,
-                0,
-                0,
-                go_right_front[3]-compass_offset);
-            lcd.clear();
+            motor_board.set_motor_value(go_right_front);
             lcd.print("right_front far");
             break;
         case LEFT_BACK_DIRECTION:
-            motor_board.set_motor_value(
-                go_left_back[0]+(compass_offset/2),
-                0,
-                0,
-                go_left_back[3]-(compass_offset/2));
-            lcd.clear();    
+            motor_board.set_motor_value(go_left_back);
             lcd.print("left_back far");
             break;
         case RIGHT_BACK_DIRECTION:
-            motor_board.set_motor_value(
-                0,
-                go_right_back[1]+(compass_offset/2),
-                go_right_back[2]-(compass_offset/2),
-                0);
-            lcd.clear();
+            motor_board.set_motor_value(go_right_back);
             lcd.print("right_back far");
             break;
         default:
           motor_board.set_motor_value(0, 0, 0, 0);
-          lcd.clear();
         }
     }
     motor_board.move();
     delay(20);
-    //unsigned int end = millis();
 }
 
 void calc_compass_reference() {
@@ -736,10 +575,17 @@ void read_light_sensor() {
         is_on_line[i] = false;
         for(int j=0; j<2; ++j) {
             int tmp = analogRead(LIGHT_PIN[i][j]);
-            if(light_reference[i][j]-tmp > 75) {
+            if(light_reference[i][j]-tmp > 90) {
                 is_on_line[i] = true;
+                is_on_line2[i][j] = true;
             }
         }
+    }
+}
+
+void set_new_light_distance() {
+    for(int i=0; i<4; ++i) {
+        light_distance[i] = ping_value[i];
     }
 }
 
@@ -811,10 +657,9 @@ int get_direction_from_far_ir() {
         return RIGHT_BACK_DIRECTION;
     } else if(largest_far_ir == 7) {
         return BACK_DIRECTION;
-    } else if(largest_far_ir == 8) {
+    } else { // 8
         return BACK_DIRECTION;
     }
-    return -1;
 }
 
 // debug
