@@ -367,7 +367,6 @@ void loop(){
                 light_flag = LINE_RIGHT_F;
                 motor_board.set_motor_value(go_left);
             }
-            light_flag = from_reference;
             set_new_light_distance();
         } else if(is_on_line[LINE_BACK]) {
             light_flag = LINE_BACK_F;
@@ -376,7 +375,6 @@ void loop(){
         }
     } else if(abs(from_reference) >= 900) {
         adjust_direction(from_reference);
-        lcd.clear();
     } else if(far_ir_status <= 2) {
         if(abs(from_reference) >= COMPASS_RANGE) {
             adjust_direction(from_reference);
@@ -410,8 +408,6 @@ void loop(){
             }
         }
     } else if(far_ir_status >= 5) {
-        delay(5);
-        read_ping();
         read_near_ir();
         const int dir = get_direction_from_near_ir();
         switch(dir) {
