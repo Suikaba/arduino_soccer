@@ -131,14 +131,14 @@ void loop(){
         go_left_back[0]=74; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=70;
         go_right_back[0]=0; go_right_back[1]=75; go_right_back[2]=75; go_right_back[3]=0;
     } else {
-        go_front[0]=-54; go_front[1]=-55; go_front[2]=-55; go_front[3]=-55;
-        go_back[0]=55; go_back[1]=56; go_back[2]=56; go_back[3]=55;
-        go_left[0]=55; go_left[1]=-54; go_left[2]=-55; go_left[3]=55;
-        go_right[0]=-56; go_right[1]=55; go_right[2]=55; go_right[3]=-55;
-        go_left_front[0]=0; go_left_front[1]=-55; go_left_front[2]=-55; go_left_front[3]=0;
-        go_right_front[0]=-55; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-60;
-        go_left_back[0]=55; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=59;
-        go_right_back[0]=0; go_right_back[1]=55; go_right_back[2]=56; go_right_back[3]=0;
+        go_front[0]=-45; go_front[1]=-46; go_front[2]=-45; go_front[3]=-45;
+        go_back[0]=45; go_back[1]=46; go_back[2]=46; go_back[3]=45;
+        go_left[0]=45; go_left[1]=-44; go_left[2]=-45; go_left[3]=45;
+        go_right[0]=-46; go_right[1]=45; go_right[2]=45; go_right[3]=-45;
+        go_left_front[0]=0; go_left_front[1]=-45; go_left_front[2]=-45; go_left_front[3]=0;
+        go_right_front[0]=-45; go_right_front[1]=0; go_right_front[2]=0; go_right_front[3]=-45;
+        go_left_back[0]=45; go_left_back[1]=0; go_left_back[2]=0; go_left_back[3]=45;
+        go_right_back[0]=0; go_right_back[1]=45; go_right_back[2]=46; go_right_back[3]=0;
     }
 
     lcd.clear();
@@ -165,7 +165,7 @@ void loop(){
         before_light_flag = 0;
     } else if(light_flag != 0 || is_on_line[LINE_LEFT_FRONT] || is_on_line[LINE_RIGHT_FRONT] || is_on_line[LINE_BACK]) {
         lcd.print("light");
-        const int ping_range = 40+abs(from_reference/6);
+        const int ping_range = 33+abs(from_reference/12);
         if(before_before_light_flag != 0 || (!is_on_line[LINE_LEFT_FRONT] && !is_on_line[LINE_RIGHT_FRONT] && !is_on_line[LINE_BACK])) {
             bool escaped = false;
             switch(light_flag) {
@@ -318,7 +318,7 @@ void loop(){
                 break;
             case LINE_LEFT_BACK_F:
                 if(is_on_line[LINE_RIGHT_FRONT]) {
-                    if(ping_value[2] < light_distance[2]) {
+                    if(ping_value[1] < light_distance[1] || ping_value[2] < light_distance[2]) {
                         motor_board.set_motor_value(go_right_front);
                     } else {
                         before_before_light_flag = before_light_flag;
@@ -333,7 +333,7 @@ void loop(){
                 break;
             case LINE_RIGHT_BACK_F:
                 if(is_on_line[LINE_LEFT_FRONT]) {
-                    if(ping_value[4] < light_distance[4]) {
+                    if(ping_value[1] < light_distance[1] || ping_value[4] < light_distance[4]) {
                         motor_board.set_motor_value(go_left_front);
                     } else {
                         before_before_light_flag = before_light_flag;
@@ -349,9 +349,11 @@ void loop(){
             }
         } else if(is_on_line[LINE_LEFT_FRONT]) {
             if(is_on_line[LINE_RIGHT_FRONT]) {
+                before_light_flag = -1;
                 light_flag = LINE_FRONT_F;
                 motor_board.set_motor_value(go_back);
             } else if(is_on_line[LINE_BACK]) {
+                before_light_flag = -1;
                 light_flag = LINE_LEFT_BACK_F;
                 motor_board.set_motor_value(go_right_front);
             } else {
@@ -361,6 +363,7 @@ void loop(){
             set_new_light_distance();
         } else if(is_on_line[LINE_RIGHT_FRONT]) {
             if(is_on_line[LINE_BACK]) {
+                before_light_flag = -1;
                 light_flag = LINE_RIGHT_BACK_F;
                 motor_board.set_motor_value(go_left_front);
             } else {
