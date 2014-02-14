@@ -102,7 +102,7 @@ void HMC5883L::calibrate()
 {
     float mx=0.f, my=0.f, minx=60000.f, miny=60000.f;
     //write(CONFIGURATION_REGISTER_A, 0x010+HMC_POS_BIAS);
-    for(int i=0; i<80; ++i)
+    for(int i=0; i<150; ++i)
     {
         magnetometer_raw raw = read_raw_axis();
         minx = min(minx, raw.x_axis);
