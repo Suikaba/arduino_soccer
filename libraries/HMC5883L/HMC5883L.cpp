@@ -100,8 +100,8 @@ int HMC5883L::set_measurement_mode(uint8_t mode)
 
 void HMC5883L::calibrate()
 {
-    float mx=0.f, my=0.f, mz=0.f, minx=0.f, miny=0.f, minz=0.f;
-    write(CONFIGURATION_REGISTER_A, 0x010+HMC_POS_BIAS);
+    float mx=0.f, my=0.f, minx=60000.f, miny=60000.f;
+    //write(CONFIGURATION_REGISTER_A, 0x010+HMC_POS_BIAS);
     for(int i=0; i<80; ++i)
     {
         magnetometer_raw raw = read_raw_axis();
@@ -113,7 +113,7 @@ void HMC5883L::calibrate()
     }
     x_offset_ += (minx+mx)/2; // += or =
     y_offset_ += (miny+my)/2;
-    write(CONFIGURATION_REGISTER_A, 0x010); // set RegA/DOR back to default
+    //write(CONFIGURATION_REGISTER_A, 0x010); // set RegA/DOR back to default
 }
 
 bool HMC5883L::calibrate(int samples_num)
