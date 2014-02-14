@@ -255,17 +255,21 @@ void loop(){
                 lcd.print("LINE_FRONT_F");
                 break;
             case LINE_BACK_F:
-                if(before_light_flag == 0) {
+                if(before_before_light_flag == 0) {
                     if(is_on_line[LINE_LEFT_FRONT]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_LEFT_BACK_F;
+                        light_distance[4] = ping_value[4];
                         motor_board.set_motor_value(go_right_front);
                     } else if(is_on_line[LINE_RIGHT_FRONT]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_RIGHT_BACK_F;
+                        light_distance[3] = ping_value[3];
                         motor_board.set_motor_value(go_left_front);
                     } else {
-                      motor_board.set_motor_value(go_front);
+                        motor_board.set_motor_value(go_front);
                     }
                 } else {
                     motor_board.set_motor_value(go_front);
@@ -273,14 +277,18 @@ void loop(){
                 lcd.print("LINE_BACK_F");
                 break;
             case LINE_LEFT_F:
-                if(before_light_flag == 0) {
+                if(before_before_light_flag == 0) {
                     if(is_on_line[LINE_RIGHT_FRONT]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_FRONT_F;
+                        light_distance[0] = ping_value[0];
                         motor_board.set_motor_value(go_back);
                     } else if(is_on_line[LINE_BACK]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_LEFT_BACK_F;
+                        light_distance[1] = ping_value[1];
                         motor_board.set_motor_value(go_right_front);
                     } else {
                         motor_board.set_motor_value(go_right);
@@ -291,12 +299,14 @@ void loop(){
                 lcd.print("LINE_LEFT_F");
                 break;
             case LINE_RIGHT_F:
-                if(before_light_flag == 0) {
+                if(before_before_light_flag == 0) {
                     if(is_on_line[LINE_LEFT_FRONT]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_FRONT_F;
                         motor_board.set_motor_value(go_back);
                     } else if(is_on_line[LINE_BACK]) {
+                        before_before_light_flag = before_light_flag;
                         before_light_flag = light_flag;
                         light_flag = LINE_RIGHT_BACK_F;
                         motor_board.set_motor_value(go_left_front);
