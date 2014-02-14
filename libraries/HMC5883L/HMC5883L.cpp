@@ -1,14 +1,7 @@
-/*
-HMC5883L.cpp - Class file for the HMC5883L Triple Axis Magnetometer Arduino Library*/
-
 #include <Arduino.h>
 #include <HMC5883L.h>
 
 namespace {
-    // const int counts_per_milligauss[8] =
-    // {
-    //     1370, 1090, 820, 660, 440, 390, 330, 230
-    // };
     const int milligauss = 1090; // gain 0x01
 }
 
@@ -23,27 +16,27 @@ HMC5883L::HMC5883L()
 
 magnetometer_raw HMC5883L::read_raw_axis()
 {
-  uint8_t* buffer = read(DATA_REGISTER_BEGIN, 6);
-  magnetometer_raw raw = {};
-  raw.x_axis = (short)((buffer[0] << 8) | buffer[1]);
-  raw.z_axis = (short)((buffer[2] << 8) | buffer[3]);
-  raw.y_axis = (short)((buffer[4] << 8) | buffer[5]);
-  //if(raw.x_axis > 32767) raw.x_axis -= 65535;
-  //if(raw.y_axis > 32767) raw.y_axis -= 65535;
-  //if(raw.z_axis > 32767) raw.z_axis -= 65535;
-  raw.x_axis -= x_offset_;
-  raw.y_axis -= y_offset_;
-  return raw;
+    uint8_t* buffer = read(DATA_REGISTER_BEGIN, 6);
+    magnetometer_raw raw = {};
+    raw.x_axis = (short)((buffer[0] << 8) | buffer[1]);
+    raw.z_axis = (short)((buffer[2] << 8) | buffer[3]);
+    raw.y_axis = (short)((buffer[4] << 8) | buffer[5]);
+    //if(raw.x_axis > 32767) raw.x_axis -= 65535;
+    //if(raw.y_axis > 32767) raw.y_axis -= 65535;
+    //if(raw.z_axis > 32767) raw.z_axis -= 65535;
+    raw.x_axis -= x_offset_;
+    raw.y_axis -= y_offset_;
+    return raw;
 }
 
 magnetometer_scaled HMC5883L::read_scaled_axis()
 {
-  magnetometer_raw raw = read_raw_axis();
-  magnetometer_scaled scaled = {};
-  scaled.x_axis = raw.x_axis * x_scale_;
-  scaled.z_axis = raw.z_axis * z_scale_;
-  scaled.y_axis = raw.y_axis * y_scale_;
-  return scaled;
+    magnetometer_raw raw = read_raw_axis();
+    magnetometer_scaled scaled = {};
+    scaled.x_axis = raw.x_axis * x_scale_;
+    scaled.z_axis = raw.z_axis * z_scale_;
+    scaled.y_axis = raw.y_axis * y_scale_;
+    return scaled;
 }
 
 int HMC5883L::set_scale(float gauss)
@@ -109,7 +102,7 @@ void HMC5883L::calibrate()
 {
     float mx=0.f, my=0.f, mz=0.f, minx=0.f, miny=0.f, minz=0.f;
     write(CONFIGURATION_REGISTER_A, 0x010+HMC_POS_BIAS);
-    for(int i=0; i<500; ++i)
+    for(int i=0; i<80; ++i)
     {
         magnetometer_raw raw = read_raw_axis();
         minx = min(minx, raw.x_axis);
@@ -205,12 +198,6 @@ float HMC5883L::read_heading()
 {
     magnetometer_scaled scaled = read_scaled_axis();
     float heading_rad = atan2(scaled.y_axis, scaled.x_axis);
-    // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your location.
-    // Find yours here: http://www.magnetic-declination.com/
-    // Mine is: 2� 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
-    // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
-    //float declination_angle = 0.0457;
-    //heading += declination_angle;
     if(heading_rad < 0) heading_rad += 2*PI;
     if(heading_rad > 2*PI) heading_rad -= 2*PI;
 
@@ -219,10 +206,10 @@ float HMC5883L::read_heading()
 
 void HMC5883L::write(int address, int data)
 {
-  Wire.beginTransmission(HMC5883L_ADDRESS);
-  Wire.write(address);
-  Wire.write(data);
-  Wire.endTransmission();
+    Wire.beginTransmission(HMC5883L_ADDRESS);
+    Wire.write(address);
+    Wire.write(data);
+    Wire.endTransmission();
 }
 
 uint8_t* HMC5883L::read(int address, int length)
