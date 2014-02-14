@@ -23,9 +23,12 @@ magnetometer_raw HMC5883L::read_raw_axis()
 {
   uint8_t* buffer = read(DATA_REGISTER_BEGIN, 6);
   magnetometer_raw raw = {};
-  raw.x_axis = (buffer[0] << 8) | buffer[1];
-  raw.z_axis = (buffer[2] << 8) | buffer[3];
-  raw.y_axis = (buffer[4] << 8) | buffer[5];
+  raw.x_axis = (short)((buffer[0] << 8) | buffer[1]);
+  raw.z_axis = (short)((buffer[2] << 8) | buffer[3]);
+  raw.y_axis = (short)((buffer[4] << 8) | buffer[5]);
+  //if(raw.x_axis > 32767) raw.x_axis -= 65535;
+  //if(raw.y_axis > 32767) raw.y_axis -= 65535;
+  //if(raw.z_axis > 32767) raw.z_axis -= 65535;
   return raw;
 }
 
@@ -42,56 +45,56 @@ magnetometer_scaled HMC5883L::read_scaled_axis()
 int HMC5883L::set_scale(float gauss)
 {
   uint8_t reg_value = 0x00;
-  if(gauss == 0.88)
+  if(gauss == 0.88f)
   {
     reg_value = 0x00;
     x_scale_ = 0.73;
     y_scale_ = 0.73;
     z_scale_ = 0.73;
   }
-  else if(gauss == 1.3)
+  else if(gauss == 1.3f)
   {
     reg_value = 0x01;
     x_scale_ = 0.92;
     y_scale_ = 0.92;
     z_scale_ = 0.92;
   }
-  else if(gauss == 1.9)
+  else if(gauss == 1.9f)
   {
     reg_value = 0x02;
     x_scale_ = 1.22;
     y_scale_ = 1.22;
     z_scale_ = 1.22;
   }
-  else if(gauss == 2.5)
+  else if(gauss == 2.5f)
   {
     reg_value = 0x03;
     x_scale_ = 1.52;
     y_scale_ = 1.52;
     z_scale_ = 1.52;
   }
-  else if(gauss == 4.0)
+  else if(gauss == 4.0f)
   {
     reg_value = 0x04;
     x_scale_ = 2.27;
     y_scale_ = 2.27;
     z_scale_ = 2.27;
   }
-  else if(gauss == 4.7)
+  else if(gauss == 4.7f)
   {
     reg_value = 0x05;
     x_scale_ = 2.56;
     y_scale_ = 2.56;
     z_scale_ = 2.56;
   }
-  else if(gauss == 5.6)
+  else if(gauss == 5.6f)
   {
     reg_value = 0x06;
     x_scale_ = 3.03;
     y_scale_ = 3.03;
     z_scale_ = 3.03;
   }
-  else if(gauss == 8.1)
+  else if(gauss == 8.1f)
   {
     reg_value = 0x07;
     x_scale_ = 4.35;
