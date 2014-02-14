@@ -79,22 +79,22 @@ int light_flag = 0;
 int before_light_flag = 0;
 int before_before_light_flag = 0;
 int light_distance[4] = {0};
+bool calibrated = false;
 
 
 void setup(){
     Wire.begin();
     pinMode(SWITCH1, INPUT);
     pinMode(SWITCH2, INPUT);
+    pinMode(LED1, OUTPUT);
+    pinMode(LED2, OUTPUT);
+    pinMode(LED3, OUTPUT);
     compass = HMC5883L();
     //Serial.begin(9600);
 
     int error = compass.set_scale(1.3);
     if(error != 0) {
         // print(compass.get_error_text(error))
-    }
-    delay(20);
-    if(!compass.calibrate(32)) {
-        // failed calibration
     }
     error = compass.set_measurement_mode(MEASUREMENT_CONTINUOUS);
     if(error != 0) {
@@ -158,11 +158,18 @@ void loop(){
     go_left_back[0]+=compass_offset; go_left_back[3]-=compass_offset;
     go_right_back[1]+=compass_offset; go_right_back[2]+=compass_offset;
 
-
-    if(!switches[0] || !switches[1]) {
+    if(!switches[0] && !switches[1]) {
+        if(!calibrated) {
+            compass.calibrate();
+        }
+        calibrated = true;
+        digitalWrite(LED1, HIGH);
+    } else if(!switches[0] || !switches[1]) {
         motor_board.set_motor_value(motor_stop);
         light_flag = 0;
         before_light_flag = 0;
+        calibrated = false;
+        digitalWrite(LED1, LOW);
     } else if(light_flag != 0 || is_on_line[LINE_LEFT_FRONT] || is_on_line[LINE_RIGHT_FRONT] || is_on_line[LINE_BACK]) {
         lcd.print("light");
         const int ping_range = 33+abs(from_reference/12);

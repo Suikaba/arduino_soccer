@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define HMC5883L_h
 
 #include <inttypes.h>
-#include "../Wire/Wire.h"
+#include <Wire.h>
 
 #define HMC5883L_ADDRESS          0x1E
 #define HMC_POS_BIAS              1
@@ -53,43 +53,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct magnetometer_scaled
 {
-  float x_axis;
-  float y_axis;
-  float z_axis;
+    float x_axis;
+    float y_axis;
+    float z_axis;
 };
 
 struct magnetometer_raw
 {
-  int x_axis;
-  int y_axis;
-  int z_axis;
+    int x_axis;
+    int y_axis;
+    int z_axis;
 };
 
 class HMC5883L
 {
 public:
-  HMC5883L();
+    HMC5883L();
 
-  magnetometer_raw read_raw_axis();
-  magnetometer_scaled read_scaled_axis();
+    magnetometer_raw read_raw_axis();
+    magnetometer_scaled read_scaled_axis();
 
-  int set_measurement_mode(uint8_t mode);
-  int set_scale(float gauss);
-  void get_id(char i[3]);
+    int set_measurement_mode(uint8_t mode);
+    int set_scale(float gauss);
+    void get_id(char i[3]);
 
-  void calibrate();
-  bool calibrate(int samples_num);
+    void calibrate();
+    bool calibrate(int samples_num);
 
-  float read_heading(); // degree, not radian
+    float read_heading(); // degree, not radian
 
-  char* get_error_text(int error_code);
-
-private:
-  void write(int address, int byte);
-  uint8_t* read(int address, int length);
+    char* get_error_text(int error_code);
 
 private:
-  float x_scale_, y_scale_, z_scale_;
+    void write(int address, int byte);
+    uint8_t* read(int address, int length);
+
+private:
+    float x_scale_, y_scale_, z_scale_;
+    float x_offset_, y_offset_;
 };
 
 #endif
