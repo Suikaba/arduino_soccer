@@ -98,11 +98,11 @@ int HMC5883L::set_measurement_mode(uint8_t mode)
     return 0;
 }
 
-void HMC5883L::calibrate()
+void HMC5883L::calibrate(int seconds)
 {
     float mx=0.f, my=0.f, minx=60000.f, miny=60000.f;
     //write(CONFIGURATION_REGISTER_A, 0x010+HMC_POS_BIAS);
-    for(int i=0; i<150; ++i)
+    for(int i=0; i<seconds*10; ++i)
     {
         magnetometer_raw raw = read_raw_axis();
         minx = min(minx, raw.x_axis);
@@ -116,8 +116,8 @@ void HMC5883L::calibrate()
     //write(CONFIGURATION_REGISTER_A, 0x010); // set RegA/DOR back to default
 }
 
-bool HMC5883L::calibrate(int samples_num)
-{
+//bool HMC5883L::calibrate(int samples_num)
+//{
     //long int xyz_total[3] = {0};
     //char id[3] = {};
     //bool bret = true;
@@ -191,15 +191,15 @@ bool HMC5883L::calibrate(int samples_num)
     //    bret = false;
     //}
     //return bret;
-    return true;
-}
+//    return true;
+//}
 
 float HMC5883L::read_heading()
 {
     magnetometer_scaled scaled = read_scaled_axis();
     float heading_rad = atan2(scaled.y_axis, scaled.x_axis);
     if(heading_rad < 0) heading_rad += 2*PI;
-    if(heading_rad > 2*PI) heading_rad -= 2*PI;
+    if(heading_rad >= 2*PI) heading_rad -= 2*PI;
 
     return heading_rad * 180/PI;
 }

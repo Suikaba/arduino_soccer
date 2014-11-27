@@ -77,8 +77,8 @@ public:
     int set_scale(float gauss);
     void get_id(char i[3]);
 
-    void calibrate();
-    bool calibrate(int samples_num);
+    void calibrate(int seconds);
+    //bool calibrate(int samples_num);
 
     float read_heading(); // degree, not radian
 
